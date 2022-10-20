@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Feb 25 22:54:37 2022
-
 @author: lucas
+NExt steps: 
+    1. making utilites module to reduce redundant code
+    2. Altering how data is gather and stored to prevent the neccesity from 
+        having to download the same data every time
 """
-
+import warnings
+warnings.filterwarnings("ignore")
 import numpy as np
 from sklearn import model_selection
 import pandas as pd
@@ -91,7 +95,7 @@ def convert_data(df_list):
     conv_dict = {'Tm':float, 'OppP':float,'FG':float, 'FGA':float, 'FG%':float, '3P':float, '3PA':float, '3P%':float, 'FT':float, 'FTA':float, 'FT%':float, 'ORB':float,'TRB':float, 'AST':float, 'STL':float, 'BLK':float, 'TOV':float, 'PF':float, 'OppFGA':float, 'OppFG':float,'OppFG%':float, 'Opp3P':float,  'Opp3PA':float, 'Opp3P%':float, 'OppFT':float, 'OppFTA':float, 'OppFT%':float, 'OppORB':float, 'OppTRB':float, 'OppAST':float, 'OppSTL':float, 'OppBLK':float, 'OppTOV':float,'OppPF':float}
     converted_df = [x.astype(conv_dict) for x in df_list]
     return converted_df
-converted = convert_data(dropped)
+
 def calculate_stats(df_list):
     for gamelog in df_list:
         gamelog['Margin'] = gamelog['Tm'] - gamelog['OppP']
@@ -175,7 +179,7 @@ def create_season(gl_list):
 
 def get_mean(gl_list):
     return [[team.describe() for team in season] for season in gl_list]
-means = get_mean(season)
+
 def create_total_season(season_list):
     new_season =  [pd.concat(season) for season in season_list]
     for season in new_season:
@@ -265,6 +269,8 @@ def final_data_prep(season_list):
     #double check
     for x in season_list:
         x.drop(['% from 3P_x','% from 3P_y'],axis =1 , inplace = True)
+    
+    
     return_df = pd.concat(season_list)
     return_df.reset_index(drop=True, inplace=True)
     return_df.drop(['Rk', 'G', 'Date_y', 'Unnamed: 3_level_1', 'OppT'],axis =1,
@@ -381,8 +387,7 @@ def bake_off(X_train, y_train, X_test, y_test):
 
 #Must choose from these inputs
 
-### WORK IN PTOGRESS ####
-"""
+
 def matchups(team1,team2):
     t1 = currentSeason[team1:team1]
     t2 = currentSeason[team2:team2]
@@ -429,23 +434,22 @@ def matchups(team1,team2):
        'Mean Assisted Ratio_2', 'Opp Mean Assist Ratio_2', 'Mean A/T Ratio_2',
        'Mean Opp A/T Ratio_2', 'Mean Effective FG%_2', 'Mean True %_2',
        'Mean Opp Effective FG%_2', 'Mean Opp True %_2','Margin of Victory dif'],axis = 1,inplace = True)
-    df = pd.concat([df2,statline],axis = 0)
+    df = pd.concat([processed_season,statline],axis = 0)
     df.reset_index(drop = True,inplace = True)
     return df
-
-
 def currentScaleAndPCAPredict(data):
     scale = StandardScaler()
     scaled_data = scale.fit_transform(data)
-    model =  PCA(n_components = 8)
+    model =  PCA(n_components = 9)
+    print(scaled_data)
     PCAdata = model.fit_transform(scaled_data)
     cut = PCAdata[len(PCAdata) - 1:]
+    print(cut)
     #model = XGBClassifier(gamma = 17, max_depth = 3,min_child_weight = 0)
     model = lm.LogisticRegression()
     model.fit(X_train,y_train)
     predictions = model.predict_proba(cut)[0]
     return predictions
-
 def impliedMLDif(predictions,ML1,ML2,teams):
     #ML1 is the first team, ML2 is the second team
     if ML1 < 0:
@@ -464,135 +468,67 @@ def impliedMLDif(predictions,ML1,ML2,teams):
         return teams[1],difference2
     else:
         print("do not bet on this game")
-
 def prediction(teams,ML1,ML2):
     df = matchups(teams[0],teams[1])
     predictions = currentScaleAndPCAPredict(df)
     team = impliedMLDif(predictions,ML1,ML2,teams)
     return team
 
-"""
-
-### NOT COMPLETE YET ###
+def user_chosen():
+    print("Would you like to find positive expected value bets?")
+    answer = input("Enter y or n")
+    if answer == "y":
+        while True:
+            print("please enter teams, chose from given list below:")
+            print(currentSeason.index.tolist())
+            print("team 1:")
+            team1 = str(input())
+            print("team 2: ")
+            team2 = str(input())
+            print("Money Line 1: ")
+            ml1 = int(input())
+            print("Money Line 2: ")
+            ml2 = (input())
+            team, difference = prediction([team1, team2], ml1, ml2)
+            print(f"Bet on this {team}. Their chance of winning is undervalue by {difference * 100}%")
+            
+            print("/nWould you like to bet find anymore more teams?")
+            answer = input("Enter y or n")
+            if answer == "y":
+                pass
+            elif answer == "n":
+                break
+    print("program finished")
+    
 def main():
     get_dict()
     new_col = column_change(sing_level)
     dropped = drop_rows(new_col)
+    converted = convert_data(dropped)
     stats = calculate_stats(converted)
     mean_stats = mean_list(stats)
     cleaned = drop_columns(mean_stats)
     season = create_season(cleaned)
     total_season = create_total_season(season)
+    means = get_mean(season)
     clean_means = clean_mean_list(means)
     names = team_names(total_season)
+    global currentSeason
+    currentSeason = pd.concat([clean_means[-1], names[-1]], axis = 1)
+    currentSeason = currentSeason.set_index(keys = 'OppT')
     full_season = oppmeans(clean_means, names, total_season)
+    global processed_season
+    global X_train
+    global y_train
     processed_season = final_data_prep(full_season)
     X, y = scale_and_transform(processed_season, split=False)
     X_train, X_test, y_train, y_test = scale_and_transform(processed_season)
-
+    bake_off(X_train, y_train, X_test, y_test)
     
     
-    
-### PLAYGROUND TO EXPERIMENT WITH NEURAL NET STRUCTURES    
-from tensorflow import math
-
-import tensorflow as tf
-from tensorflow.keras import backend
-
-
-from keras.layers import AlphaDropout
-from keras.layers import SimpleRNN
-from keras.layers import Input
-from tensorflow.keras import regularizers
-####MAIN NEURAL NET ####
-model = Sequential()
-model.add( Dense( 9, input_shape = ( 9, ), activation = 'selu' ) ) # hidden layer
-model.add( Dense( 100, activation = 'selu', kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5)) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 250, activation = 'selu',kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5) ) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 500, activation = 'selu' ,kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5)) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 1000, activation = 'selu' ,kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5)) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 500, activation = 'selu' ,kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5)) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 250, activation = 'selu' ,
-                 kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.L2(1e-4),
-    activity_regularizer=regularizers.L2(1e-5)) ) # hidden layer
-model.add(AlphaDropout(rate=.2))
-model.add( Dense( 1, activation = 'sigmoid' ) )
-model.compile( Adam( learning_rate = 0.0001, beta_1 = .2, beta_2 = .2 ), 
-              loss='binary_crossentropy', metrics = [ 'accuracy' ] )
-
-model.fit(X_train, y_train, batch_size=50, epochs=50,validation_data=(X_test,y_test))
-y_tf = tf.constant(y)
-pre = model.predict(X)
-import numpy as np
-real_loss = loss_function(y_tf,pre)
-
-loss='binary_crossentropy'
-
-
-model = Sequential()
-
-model.add( Dense( 9, input_shape = ( 9, ), activation = 'selu' ) ) # hidden layer
-model.add( Dense( 100, activation = 'selu') ) # hidden layer
-
-model.add( Dense( 1, activation = 'sigmoid' ) )
-model.compile( Adam( learning_rate = 0.0001, beta_1 = .2, beta_2 = .2 ), 
-              loss = loss_function, metrics = [ 'accuracy' ] )
-
-model.fit(X_train, y_train, batch_size=100, epochs=5,validation_data=(X_test,y_test))
-
-
-
-
-from keras.layers import LSTM
-look_back = 4
-model.add( LSTM( 16, input_shape = ( look_back, 1 ) ) )
-model.add( Dense( 4, kernel_initializer = 'normal', activation = 'linear' ) )
-model.add( Dense( 1 ) )
-model = Sequential()
-# model.add(Input(shape=9))
-model.add(LSTM(9, input_shape = (look_back, 1))  ) # hidden layer
-
-model.add( SimpleRNN( 100, activation = 'selu' ) ) # hidden layer
-model.add(AlphaDropout(rate=.1))
-model.add( SimpleRNN( 100, activation = 'selu' ) ) # hidden layer
-model.add(AlphaDropout(rate=.1))
-model.add( SimpleRNN( 100, activation = 'selu' ) ) # hidden layer
-model.add(AlphaDropout(rate=.1))
-model.add( SimpleRNN( 100, activation = 'selu' ) ) # hidden layer
-model.add(AlphaDropout(rate=.1))
-model.add( Dense( 1, activation = 'sigmoid' ) )
-model.compile( Adam( learning_rate = 0.001, beta_1 = .9, beta_2 = .99 ), 
-              loss = "binary_crossentropy", metrics = [ 'accuracy' ] )
-
-model.fit(X_train, y_train, batch_size=10, epochs=100,validation_data=(X_test,y_test))
-
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
-
-
-
+    user_chosen()
 
 
 
