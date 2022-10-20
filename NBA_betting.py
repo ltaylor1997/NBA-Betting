@@ -43,7 +43,7 @@ def get_dict():
             if year in url:
                 years[year]+=1
     
-get_dict()
+
 def get_tables():
     game_log_url= open_or_create_file()
     df_gl = []
@@ -73,7 +73,7 @@ def column_change(df_list):
                       'OppORB', 'OppTRB', 'OppAST', 'OppSTL','OppBLK', 'OppTOV', 
                       'OppPF'])
     return [df_list[i][0] for i in range(len(df_list))]
-new_col = column_change(sing_level)
+
 
 def drop_rows(df_list):
     for gamelog in df_list:
@@ -86,7 +86,7 @@ def drop_rows(df_list):
         gamelog.reset_index(drop=True, inplace=True)
             
     return df_list
-dropped = drop_rows(new_col)
+
 def convert_data(df_list):
     conv_dict = {'Tm':float, 'OppP':float,'FG':float, 'FGA':float, 'FG%':float, '3P':float, '3PA':float, '3P%':float, 'FT':float, 'FTA':float, 'FT%':float, 'ORB':float,'TRB':float, 'AST':float, 'STL':float, 'BLK':float, 'TOV':float, 'PF':float, 'OppFGA':float, 'OppFG':float,'OppFG%':float, 'Opp3P':float,  'Opp3PA':float, 'Opp3P%':float, 'OppFT':float, 'OppFTA':float, 'OppFT%':float, 'OppORB':float, 'OppTRB':float, 'OppAST':float, 'OppSTL':float, 'OppBLK':float, 'OppTOV':float,'OppPF':float}
     converted_df = [x.astype(conv_dict) for x in df_list]
@@ -120,7 +120,7 @@ def calculate_stats(df_list):
         gamelog['Opp True %'] = gamelog['OppP'] / (2 * (gamelog['OppFGA'] + (.44 * gamelog['OppFTA'])))
 
     return df_list
-stats = calculate_stats(converted)
+
 def mean_list(gamelog_list):
     for gamelog in gamelog_list:
         gamelog['Mean OR'] = gamelog['Offensive Rating'].mean()
@@ -147,7 +147,7 @@ def mean_list(gamelog_list):
     return gamelog_list 
 
 #Add a column of the means for each team
-mean_stats = mean_list(stats)
+
 def drop_columns(gamelogs):
     for team in gamelogs:
         team.drop([ 'W/L', 'Tm', 'OppP','FG', 'FGA', 'FG%', '3P', '3PA', '3P%', 
@@ -162,7 +162,7 @@ def drop_columns(gamelogs):
                 'True %', 'Opp Effective FG %', 'Opp True %'], axis = 1, 
                inplace = True)
     return gamelogs
-cleaned = drop_columns(mean_stats)
+
 def create_season(gl_list):
     cut_num = 0
     df_by_season = []
@@ -172,7 +172,6 @@ def create_season(gl_list):
         df_by_season.append(season)
         cut_num+=year
     return df_by_season
-season = create_season(cleaned)
 
 def get_mean(gl_list):
     return [[team.describe() for team in season] for season in gl_list]
@@ -184,10 +183,8 @@ def create_total_season(season_list):
     return new_season
 
 
-total_season = create_total_season(season)
 #find the means
-t = [1,2,3,4,5,6]
-print(t[3:])
+
 def clean_mean_list(mean_list):
     for season in mean_list:
         for team in season:
@@ -200,8 +197,7 @@ def clean_mean_list(mean_list):
         season.reset_index(drop=True, inplace=True)
     
     return meanlist
-#Drop useless columns
-clean_means = clean_mean_list(means)
+
 
 def team_names(season_list):
     names = []
@@ -217,7 +213,8 @@ def team_names(season_list):
         season.reset_index(drop=True, inplace=True)
     return return_names
 
-names = team_names(total_season)
+#Drop useless columns
+
 
 def oppmeans(means, names, seasons):
     
@@ -228,7 +225,6 @@ def oppmeans(means, names, seasons):
         df.append(df_w_mean)
     return df
 
-full_season = oppmeans(clean_means, names, total_season)
 
 
 def final_data_prep(season_list):
@@ -276,8 +272,6 @@ def final_data_prep(season_list):
     return_df.fillna(0, inplace=True)
     return return_df
 
-processed_season = final_data_prep(full_season)
-
 #Prep data for the pca
 
 
@@ -303,8 +297,7 @@ def scale_and_transform(full_df, split=True):
         return X_tra, X_te, y_tr, y_te
     else:
         return X, y
-X, y = scale_and_transform(processed_season, split=False)
-X_train, X_test, y_train, y_test = scale_and_transform(processed_season)
+
 
 def efficency_prep(binary,probability):
     global bins
@@ -479,7 +472,28 @@ def prediction(teams,ML1,ML2):
     return team
 
 """
-### PLAYGROUND TO EXPERIMENT WITH NEURAL NET STRUCTURES
+
+### NOT COMPLETE YET ###
+def main():
+    get_dict()
+    new_col = column_change(sing_level)
+    dropped = drop_rows(new_col)
+    stats = calculate_stats(converted)
+    mean_stats = mean_list(stats)
+    cleaned = drop_columns(mean_stats)
+    season = create_season(cleaned)
+    total_season = create_total_season(season)
+    clean_means = clean_mean_list(means)
+    names = team_names(total_season)
+    full_season = oppmeans(clean_means, names, total_season)
+    processed_season = final_data_prep(full_season)
+    X, y = scale_and_transform(processed_season, split=False)
+    X_train, X_test, y_train, y_test = scale_and_transform(processed_season)
+
+    
+    
+    
+### PLAYGROUND TO EXPERIMENT WITH NEURAL NET STRUCTURES    
 from tensorflow import math
 
 import tensorflow as tf
@@ -574,7 +588,8 @@ model.fit(X_train, y_train, batch_size=10, epochs=100,validation_data=(X_test,y_
 
 
 
-
+if __name__ == "__main__":
+    main()
 
 
 
