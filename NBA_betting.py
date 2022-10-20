@@ -377,15 +377,6 @@ def bake_off(X_train, y_train, X_test, y_test):
         print(f"\tMean Weighted Difference {mean_score}")
         print(f"\tSignificantly different levels {sig}")
         
-# Run a logistic regression on pure wins
-
-#current season input
-# 20-30?
-
-
-# currentSeason = currentSeason.set_index(keys = 'OppT')
-
-#Must choose from these inputs
 
 
 def matchups(team1,team2):
