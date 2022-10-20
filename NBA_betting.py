@@ -473,7 +473,7 @@ def prediction(teams,ML1,ML2):
     predictions = currentScaleAndPCAPredict(df)
     team = impliedMLDif(predictions,ML1,ML2,teams)
     return team
-
+### STILL DEBUGGING
 def user_chosen():
     print("Would you like to find positive expected value bets?")
     answer = input("Enter y or n")
@@ -528,6 +528,7 @@ def main():
     
 if __name__ == "__main__":
     main()
+    ### STILL DEBUGGING
     user_chosen()
 
 
