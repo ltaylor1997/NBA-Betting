@@ -23,7 +23,7 @@ def open_or_create_file():
     else:
         
         f = open("nba_game_logs.txt", "w")
-        for i in range(2000,2023,1):
+        for i in range(2000,2024,1):
             print(i)
             html = requests.get(f"https://www.basketball-reference.com/leagues/NBA_{i}_standings.html").text
             soup = BeautifulSoup(html, "html.parser")
