@@ -377,6 +377,15 @@ def bake_off(X_train, y_train, X_test, y_test):
         print(f"\tMean Weighted Difference {mean_score}")
         print(f"\tSignificantly different levels {sig}")
         
+# Run a logistic regression on pure wins
+
+#current season input
+# 20-30?
+
+
+# currentSeason = currentSeason.set_index(keys = 'OppT')
+
+#Must choose from these inputs
 
 
 def matchups(team1,team2):
@@ -427,8 +436,10 @@ def matchups(team1,team2):
        'Mean Opp Effective FG%_2', 'Mean Opp True %_2','Margin of Victory dif'],axis = 1,inplace = True)
     df = pd.concat([processed_season,statline],axis = 0)
     df.reset_index(drop = True,inplace = True)
+    df.drop(["BWL_x"], axis=1, inplace=True)
     return df
 def currentScaleAndPCAPredict(data):
+    print(data)
     scale = StandardScaler()
     scaled_data = scale.fit_transform(data)
     model =  PCA(n_components = 9)
@@ -464,10 +475,10 @@ def prediction(teams,ML1,ML2):
     predictions = currentScaleAndPCAPredict(df)
     team = impliedMLDif(predictions,ML1,ML2,teams)
     return team
-### STILL DEBUGGING
+
 def user_chosen():
     print("Would you like to find positive expected value bets?")
-    answer = input("Enter y or n")
+    answer = input("Enter y or n\n")
     if answer == "y":
         while True:
             print("please enter teams, chose from given list below:")
@@ -505,6 +516,7 @@ def main():
     clean_means = clean_mean_list(means)
     names = team_names(total_season)
     global currentSeason
+    
     currentSeason = pd.concat([clean_means[-1], names[-1]], axis = 1)
     currentSeason = currentSeason.set_index(keys = 'OppT')
     full_season = oppmeans(clean_means, names, total_season)
@@ -521,6 +533,3 @@ if __name__ == "__main__":
     main()
     ### STILL DEBUGGING
     user_chosen()
-
-
-
